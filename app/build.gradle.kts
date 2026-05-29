@@ -27,6 +27,14 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    applicationVariants.all {
+        val variant = this
+        variant.outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "weather.apk"
+        }
+    }
+
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
