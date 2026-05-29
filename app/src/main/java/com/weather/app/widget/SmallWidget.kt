@@ -2,8 +2,11 @@ package com.weather.app.widget
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.*
 import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.provideContent
@@ -20,8 +23,7 @@ class SmallWeatherWidget : GlanceAppWidget() {
         val data = WidgetDataStore.getPrimary(context)
         provideContent {
             val bgTop = if (data != null) WidgetColors.gradientTopForCondition(data.condition, data.isDay) else Color(0xFF1565C0)
-            GlanceTheme {
-                Box(
+            Box(
                     modifier = GlanceModifier
                         .fillMaxSize()
                         .background(bgTop)
@@ -29,31 +31,26 @@ class SmallWeatherWidget : GlanceAppWidget() {
                     contentAlignment = Alignment.Center
                 ) {
                     if (data == null) {
-                        Text("—", style = TextStyle(color = ColorProvider(Color.White), fontSize = androidx.glance.unit.Sp(22f)))
+                        Text("—", style = TextStyle(color = ColorProvider(Color.White), fontSize = 22.sp))
                     } else {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
+                                text = WeatherDrawableMap.emojiFor(data.condition),
+                                style = TextStyle(fontSize = 28.sp)
+                            )
+                            Text(
                                 text = "${data.temperature}${data.temperatureSymbol}",
                                 style = TextStyle(
                                     color = ColorProvider(Color.White),
-                                    fontSize = androidx.glance.unit.Sp(28f),
-                                    fontWeight = FontWeight.Medium
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
-                            )
-                            Text(
-                                text = data.conditionDescription,
-                                style = TextStyle(
-                                    color = ColorProvider(Color.White.copy(alpha = 0.8f)),
-                                    fontSize = androidx.glance.unit.Sp(11f)
-                                ),
-                                maxLines = 1
                             )
                         }
                     }
-                }
             }
         }
     }

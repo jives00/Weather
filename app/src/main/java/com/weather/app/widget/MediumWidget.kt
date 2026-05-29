@@ -2,8 +2,11 @@ package com.weather.app.widget
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.*
 import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.provideContent
@@ -20,8 +23,7 @@ class MediumWeatherWidget : GlanceAppWidget() {
         val data = WidgetDataStore.getPrimary(context)
         provideContent {
             val bgTop = if (data != null) WidgetColors.gradientTopForCondition(data.condition, data.isDay) else Color(0xFF1565C0)
-            GlanceTheme {
-                Column(
+            Column(
                     modifier = GlanceModifier
                         .fillMaxSize()
                         .background(bgTop)
@@ -31,7 +33,6 @@ class MediumWeatherWidget : GlanceAppWidget() {
                     if (data == null) {
                         Text("—", style = TextStyle(color = ColorProvider(Color.White)))
                     } else {
-                        // Top row: location + current temp
                         Row(
                             modifier = GlanceModifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -39,35 +40,35 @@ class MediumWeatherWidget : GlanceAppWidget() {
                             Column(modifier = GlanceModifier.defaultWeight()) {
                                 Text(
                                     text = data.locationName,
-                                    style = TextStyle(color = ColorProvider(Color.White), fontSize = androidx.glance.unit.Sp(14f), fontWeight = FontWeight.Medium),
+                                    style = TextStyle(color = ColorProvider(Color.White), fontSize = 14.sp, fontWeight = FontWeight.Bold),
                                     maxLines = 1
                                 )
                                 Text(
                                     text = data.conditionDescription,
-                                    style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.8f)), fontSize = androidx.glance.unit.Sp(11f)),
+                                    style = TextStyle(color = ColorProvider(Color.White), fontSize = 11.sp, fontWeight = FontWeight.Bold),
                                     maxLines = 1
                                 )
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = "${data.temperature}${data.temperatureSymbol}",
-                                    style = TextStyle(color = ColorProvider(Color.White), fontSize = androidx.glance.unit.Sp(32f), fontWeight = FontWeight.Light)
+                                    text = WeatherDrawableMap.emojiFor(data.condition),
+                                    style = TextStyle(fontSize = 24.sp)
                                 )
                                 Text(
-                                    text = "H:${data.highTemp}° L:${data.lowTemp}°",
-                                    style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.75f)), fontSize = androidx.glance.unit.Sp(11f))
+                                    text = "${data.temperature}${data.temperatureSymbol}",
+                                    style = TextStyle(color = ColorProvider(Color.White), fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                                )
+                                Text(
+                                    text = "H: ${data.highTemp}°  L: ${data.lowTemp}°",
+                                    style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.75f)), fontSize = 11.sp)
                                 )
                             }
                         }
 
                         Spacer(GlanceModifier.height(8.dp))
 
-                        // Hourly strip
                         if (data.hourlyTemps.isNotEmpty()) {
-                            Row(
-                                modifier = GlanceModifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
+                            Row(modifier = GlanceModifier.fillMaxWidth()) {
                                 data.hourlyTemps.take(4).forEachIndexed { i, temp ->
                                     Column(
                                         modifier = GlanceModifier.defaultWeight(),
@@ -75,18 +76,17 @@ class MediumWeatherWidget : GlanceAppWidget() {
                                     ) {
                                         Text(
                                             text = "${i + 1}h",
-                                            style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.65f)), fontSize = androidx.glance.unit.Sp(10f))
+                                            style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.65f)), fontSize = 10.sp)
                                         )
                                         Text(
                                             text = "$temp°",
-                                            style = TextStyle(color = ColorProvider(Color.White), fontSize = androidx.glance.unit.Sp(13f))
+                                            style = TextStyle(color = ColorProvider(Color.White), fontSize = 13.sp)
                                         )
                                     }
                                 }
                             }
                         }
                     }
-                }
             }
         }
     }

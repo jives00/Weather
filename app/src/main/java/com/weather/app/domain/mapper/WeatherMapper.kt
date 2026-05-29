@@ -68,6 +68,7 @@ object WeatherMapper {
                 time = parseHourlyTime(h.time[i]),
                 temperature = h.temperature[i],
                 precipitationProbability = h.precipitationProbability.getOrNull(i) ?: 0,
+                precipitation = h.precipitation.getOrNull(i) ?: 0.0,
                 condition = WeatherCondition.fromWmoCode(h.weatherCode[i], isDay),
                 wmoCode = h.weatherCode[i],
                 isDay = isDay

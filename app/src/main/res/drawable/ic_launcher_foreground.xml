@@ -4,19 +4,44 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Sun circle -->
+
+    <!--
+        8-pointed star.
+        Cardinal points (N/S/E/W) at radius 44 from center (54,54).
+        Diagonal points (NE/SE/SW/NW) at radius 31.
+        Inner valleys at radius 19.
+
+        Cardinal points land at 10, 98 — well inside the 108dp viewport.
+        All coordinates computed as: x = 54 + r*sin(θ), y = 54 - r*cos(θ)
+    -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,30 A14,14 0 1,1 54,58 A14,14 0 1,1 54,30 Z"/>
-    <!-- Sun rays -->
+        android:fillColor="#F9A825"
+        android:pathData="
+            M 54,10
+            L 61,37  L 76,31  L 72,46
+            L 98,54
+            L 72,62  L 76,77  L 61,71
+            L 54,98
+            L 47,71  L 32,77  L 36,62
+            L 10,54
+            L 36,46  L 32,31  L 47,37
+            Z"/>
+
+    <!-- Golden circle overlaid on the star center, radius 28 -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.5"
-        android:strokeLineCap="round"
-        android:pathData="M54,22 L54,16 M54,72 L54,66 M22,44 L16,44 M92,44 L86,44 M31.5,23.5 L27,19 M80.5,69.5 L76,65 M76.5,23.5 L81,19 M27.5,69.5 L23,65"/>
-    <!-- Cloud -->
+        android:fillColor="#FFCA28"
+        android:pathData="M54,26 A28,28 0 0,1 54,82 A28,28 0 0,1 54,26 Z"/>
+
+    <!-- Cloud — lower center, overlapping the circle's bottom edge -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.9"
-        android:pathData="M72,62 A10,10 0 0,0 52,60 A8,8 0 0,0 36,68 L72,68 A6,6 0 0,0 72,62 Z"/>
+        android:fillColor="#EEEEEE"
+        android:pathData="
+            M 34,76
+            C 32,72 32,66 38,64
+            C 40,58 49,57 54,62
+            C 57,55 67,54 72,60
+            C 76,55 84,57 84,64
+            C 88,66 86,76 82,76
+            Z"/>
+
 </vector>

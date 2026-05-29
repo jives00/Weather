@@ -28,7 +28,7 @@ interface WeatherApi {
             "temperature_2m,relative_humidity_2m,apparent_temperature,is_day," +
             "weather_code,wind_speed_10m,wind_direction_10m,surface_pressure,visibility"
         const val HOURLY_FIELDS =
-            "temperature_2m,precipitation_probability,weather_code,is_day"
+            "temperature_2m,precipitation_probability,precipitation,weather_code,is_day"
         const val DAILY_FIELDS =
             "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset," +
             "precipitation_sum,precipitation_probability_max,wind_speed_10m_max,uv_index_max"

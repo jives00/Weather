@@ -19,6 +19,7 @@ data class HourlyWeather(
     val time: Long,
     val temperature: Double,
     val precipitationProbability: Int,
+    val precipitation: Double = 0.0,
     val condition: WeatherCondition,
     val wmoCode: Int,
     val isDay: Boolean

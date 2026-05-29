@@ -1,15 +1,9 @@
 package com.weather.app.widget
 
-import androidx.glance.color.ColorProvider
-import androidx.glance.unit.ColorProvider
 import androidx.compose.ui.graphics.Color
 import com.weather.app.domain.model.WeatherCondition
 
 object WidgetColors {
-    val text = ColorProvider(Color.White)
-    val textDim = ColorProvider(Color.White.copy(alpha = 0.75f))
-    val background = ColorProvider(Color(0x88000000))
-
     fun gradientTopForCondition(condition: WeatherCondition, isDay: Boolean): Color = when {
         condition == WeatherCondition.THUNDERSTORM -> Color(0xFF0D0D0D)
         condition == WeatherCondition.RAIN || condition == WeatherCondition.RAIN_SHOWERS || condition == WeatherCondition.DRIZZLE -> Color(0xFF1A2744)

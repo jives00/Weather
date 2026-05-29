@@ -2,8 +2,11 @@ package com.weather.app.widget
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.*
 import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.provideContent
@@ -19,42 +22,67 @@ class BarWeatherWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = WidgetDataStore.getPrimary(context)
         provideContent {
-            val bgTop = if (data != null) WidgetColors.gradientTopForCondition(data.condition, data.isDay) else Color(0xFF1565C0)
-            GlanceTheme {
-                Row(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .background(bgTop)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .clickable(actionStartActivity<MainActivity>()),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (data == null) {
-                        Text("—", style = TextStyle(color = ColorProvider(Color.White)))
-                    } else {
-                        Text(
-                            text = data.locationName,
-                            style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.85f)), fontSize = androidx.glance.unit.Sp(13f)),
-                            modifier = GlanceModifier.defaultWeight(),
-                            maxLines = 1
-                        )
-                        Spacer(GlanceModifier.width(8.dp))
+            // No GlanceTheme — avoids Material You dynamic color overriding explicit colors
+            Row(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .padding(horizontal = 10.dp, vertical = 2.dp)
+                    .clickable(actionStartActivity<MainActivity>()),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (data == null) {
+                    Text("—", style = TextStyle(color = ColorProvider(Color.White), fontSize = 14.sp))
+                } else {
+                    // Left: weather emoji icon
+                    Text(
+                        text = WeatherDrawableMap.emojiFor(data.condition),
+                        style = TextStyle(fontSize = 26.sp),
+                        modifier = GlanceModifier.width(36.dp)
+                    )
+
+                    Spacer(GlanceModifier.width(8.dp))
+
+                    // Center: temp + location
+                    Column(modifier = GlanceModifier.defaultWeight()) {
                         Text(
                             text = "${data.temperature}${data.temperatureSymbol}",
-                            style = TextStyle(color = ColorProvider(Color.White), fontSize = androidx.glance.unit.Sp(22f), fontWeight = FontWeight.Medium)
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
-                        Spacer(GlanceModifier.width(8.dp))
                         Text(
-                            text = data.conditionDescription,
-                            style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.8f)), fontSize = androidx.glance.unit.Sp(12f)),
-                            modifier = GlanceModifier.defaultWeight(),
+                            text = data.locationName,
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
                             maxLines = 1
                         )
-                        Spacer(GlanceModifier.width(8.dp))
+                    }
+
+                    Spacer(GlanceModifier.width(6.dp))
+
+                    // Right: condition + H/L
+                    Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            text = "H:${data.highTemp}° L:${data.lowTemp}°",
-                            style = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.75f)), fontSize = androidx.glance.unit.Sp(11f))
+                            text = data.conditionDescription,
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "H: ${data.highTemp}°  L: ${data.lowTemp}°",
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
                     }
                 }

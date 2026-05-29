@@ -23,16 +23,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.weather.app.domain.model.WeatherCondition
 import com.weather.app.domain.model.WeatherForecast
 import com.weather.app.domain.model.WeatherLocation
-import com.weather.app.ui.components.AnimatedBackgroundWithSize
-import com.weather.app.ui.components.DailyForecastList
-import com.weather.app.ui.components.DetailCardsGrid
-import com.weather.app.ui.components.HourlyForecastRow
-import com.weather.app.ui.components.WeatherIcon
+import com.weather.app.ui.components.*
 import com.weather.app.ui.theme.OnWeatherSurface
 import com.weather.app.ui.theme.OnWeatherSurfaceDim
-import com.weather.app.ui.theme.WeatherCardBackground
 import java.util.Calendar
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -43,61 +39,65 @@ fun MainScreen(
 ) {
     val locations by viewModel.locations.collectAsStateWithLifecycle()
     val forecasts by viewModel.forecasts.collectAsStateWithLifecycle()
-    val units by viewModel.units.collectAsStateWithLifecycle()
 
     val locationPermission = rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted()
     }
-
     LaunchedEffect(locationPermission.status.isGranted) {
-        if (locationPermission.status.isGranted) {
-            viewModel.onLocationPermissionGranted()
-        } else {
-            locationPermission.launchPermissionRequest()
-        }
+        if (locationPermission.status.isGranted) viewModel.onLocationPermissionGranted()
+        else locationPermission.launchPermissionRequest()
     }
 
-    var showAddLocationDialog by remember { mutableStateOf(false) }
-
+    var showAddDialog by remember { mutableStateOf(false) }
     val pageCount = if (locations.isEmpty()) 1 else locations.size
     val pagerState = rememberPagerState(pageCount = { pageCount })
 
+    val currentLocation = locations.getOrNull(pagerState.currentPage)
+    val currentForecast = (currentLocation?.let { forecasts[it.id] } as? WeatherUiState.Success)?.forecast
+    val hourOfDay = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // Background for the current page
-        val currentLocation = locations.getOrNull(pagerState.currentPage)
-        val currentForecast = currentLocation?.let { forecasts[it.id] as? WeatherUiState.Success }?.forecast
-        val currentCondition = currentForecast?.current?.condition
-        val hourOfDay = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
+        // Animated gradient background
+        AnimatedBackgroundWithSize(
+            condition = currentForecast?.current?.condition ?: WeatherCondition.CLEAR_DAY,
+            hourOfDay = hourOfDay,
+            modifier = Modifier.fillMaxSize()
+        )
 
-        if (currentCondition != null) {
-            AnimatedBackgroundWithSize(condition = currentCondition, hourOfDay = hourOfDay, modifier = Modifier.fillMaxSize())
-        } else {
-            Box(modifier = Modifier.fillMaxSize().background(Color(0xFF1565C0)))
-        }
-
-        // Main pager content
         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
             val location = locations.getOrNull(page)
             val state = location?.let { forecasts[it.id] }
-
             when {
-                location == null -> EmptyState(onAddLocation = { showAddLocationDialog = true })
+                location == null -> EmptyState(onAddLocation = { showAddDialog = true })
                 state == null || state is WeatherUiState.Loading -> LoadingPage()
-                state is WeatherUiState.Error -> ErrorPage(message = state.message, onRetry = { viewModel.fetchForecast(location) })
-                state is WeatherUiState.Success -> WeatherPage(forecast = state.forecast)
+                state is WeatherUiState.Error -> ErrorPage(state.message) { viewModel.fetchForecast(location) }
+                state is WeatherUiState.Success -> WeatherPage(forecast = state.forecast, hourOfDay = hourOfDay)
             }
         }
 
-        // Top bar overlay
+        // Status bar scrim — prevents scrolled content from showing through the notification bar
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars)
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.88f), Color.Transparent)
+                    )
+                )
+                .align(Alignment.TopCenter)
+        )
+
+        // Top bar
         TopBar(
-            locationName = locations.getOrNull(pagerState.currentPage)?.name ?: "",
-            isGps = locations.getOrNull(pagerState.currentPage)?.isCurrentLocation == true,
+            locationName = currentLocation?.name ?: "",
+            isGps = currentLocation?.isCurrentLocation == true,
             onSettings = onNavigateToSettings,
-            onAdd = { showAddLocationDialog = true },
+            onAdd = { showAddDialog = true },
             modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding()
         )
 
-        // Page dots indicator
+        // Page dots
         if (locations.size > 1) {
             PageIndicator(
                 pageCount = locations.size,
@@ -107,50 +107,79 @@ fun MainScreen(
         }
     }
 
-    if (showAddLocationDialog) {
+    if (showAddDialog) {
         AddLocationDialog(
-            onDismiss = { showAddLocationDialog = false },
-            onSearch = { query -> viewModel.searchLocations(query) },
-            onSelect = { loc ->
-                viewModel.addLocation(loc)
-                showAddLocationDialog = false
-            }
+            onDismiss = { showAddDialog = false },
+            onSearch = { viewModel.searchLocations(it) },
+            onSelect = { viewModel.addLocation(it); showAddDialog = false }
         )
     }
 }
 
 @Composable
-private fun WeatherPage(forecast: WeatherForecast) {
-    val hourOfDay = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val nowEpoch = System.currentTimeMillis() / 1000
-    val upcomingHourly = remember(forecast) { forecast.hourly.filter { it.time >= nowEpoch }.take(24) }
+private fun WeatherPage(forecast: WeatherForecast, hourOfDay: Int) {
+    val nowEpoch = remember { System.currentTimeMillis() / 1000 }
+    val upcomingHourly = remember(forecast) { forecast.hourly.filter { it.time >= nowEpoch - 1800 }.take(24) }
+    val isPrecipCondition = forecast.current.condition in listOf(
+        WeatherCondition.RAIN, WeatherCondition.DRIZZLE, WeatherCondition.RAIN_SHOWERS,
+        WeatherCondition.FREEZING_RAIN, WeatherCondition.SNOW, WeatherCondition.SNOW_SHOWERS,
+        WeatherCondition.THUNDERSTORM
+    )
+    val hasPrecipForecast = remember(forecast) {
+        forecast.hourly.filter { it.time >= nowEpoch }.take(12)
+            .any { it.precipitation > 0.05 || it.precipitationProbability > 25 }
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 32.dp)
+        contentPadding = PaddingValues(bottom = 40.dp)
     ) {
-        // Hero section
+        // Hero: ~40% of screen height
         item {
-            HeroSection(
-                forecast = forecast,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillParentMaxHeight(0.62f)
+                    .fillParentMaxHeight(0.42f)
+            ) {
+                // Illustrated scene (hills + sun/moon/clouds)
+                WeatherScene(
+                    condition = forecast.current.condition,
+                    isDay = forecast.current.isDay,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // Temperature and condition overlay
+                HeroContent(forecast = forecast, modifier = Modifier.fillMaxSize())
+            }
+        }
+
+        // Precipitation chart (only when raining or rain expected)
+        if (isPrecipCondition || hasPrecipForecast) {
+            item {
+                PrecipitationForecastCard(
+                    hourly = forecast.hourly,
+                    units = forecast.units,
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp).padding(bottom = 12.dp)
+                )
+            }
+        }
+
+        // Hourly forecast
+        item {
+            HourlyForecastSection(
+                hourly = upcomingHourly,
+                units = forecast.units,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(top = if (!isPrecipCondition && !hasPrecipForecast) 16.dp else 0.dp).padding(bottom = 12.dp)
             )
         }
 
-        // Hourly forecast card
+        // 10-day forecast (expandable)
         item {
-            SectionCard(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp)) {
-                HourlyForecastRow(hourly = upcomingHourly, units = forecast.units, modifier = Modifier.fillMaxWidth())
-            }
-        }
-
-        // Daily forecast card
-        item {
-            SectionCard(modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp)) {
-                DailyForecastList(daily = forecast.daily, units = forecast.units)
-            }
+            DailyForecastSection(
+                daily = forecast.daily,
+                hourly = forecast.hourly,
+                units = forecast.units,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp)
+            )
         }
 
         // Detail cards
@@ -163,29 +192,59 @@ private fun WeatherPage(forecast: WeatherForecast) {
     }
 }
 
+private val heroShadow = androidx.compose.ui.graphics.Shadow(
+    color = Color.Black.copy(alpha = 0.6f),
+    offset = androidx.compose.ui.geometry.Offset(0f, 1f),
+    blurRadius = 6f
+)
+
 @Composable
-private fun HeroSection(forecast: WeatherForecast, modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+private fun HeroContent(forecast: WeatherForecast, modifier: Modifier = Modifier) {
+    Box(modifier = modifier) {
+        // Dark scrim — stronger at top (protects the bar buttons) fading out toward center
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.55f)
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent)
+                    )
+                )
+        )
+
+        // All text stacked on the left, anchored toward the bottom of the hero
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(top = 80.dp) // leave room for top bar
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .statusBarsPadding()
+                .padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
+                text = "Now",
+                style = MaterialTheme.typography.labelLarge.copy(shadow = heroShadow),
+                color = OnWeatherSurfaceDim
+            )
+            Text(
                 text = "${forecast.current.temperature.toInt()}°",
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayLarge.copy(shadow = heroShadow),
                 color = OnWeatherSurface
             )
             Text(
-                text = forecast.current.conditionDescription,
-                style = MaterialTheme.typography.headlineMedium,
-                color = OnWeatherSurfaceDim,
-                textAlign = TextAlign.Center
+                text = "H: ${forecast.highToday.toInt()}°  ·  L: ${forecast.lowToday.toInt()}°",
+                style = MaterialTheme.typography.titleMedium.copy(shadow = heroShadow),
+                color = OnWeatherSurfaceDim
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
-                text = "H:${forecast.highToday.toInt()}° L:${forecast.lowToday.toInt()}°",
-                style = MaterialTheme.typography.titleMedium,
+                text = forecast.current.conditionDescription,
+                style = MaterialTheme.typography.titleMedium.copy(shadow = heroShadow),
+                color = OnWeatherSurface
+            )
+            Text(
+                text = "Feels like ${forecast.current.feelsLike.toInt()}°",
+                style = MaterialTheme.typography.bodyMedium.copy(shadow = heroShadow),
                 color = OnWeatherSurfaceDim
             )
         }
@@ -193,25 +252,7 @@ private fun HeroSection(forecast: WeatherForecast, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun SectionCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(WeatherCardBackground)
-            .padding(vertical = 8.dp)
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun TopBar(
-    locationName: String,
-    isGps: Boolean,
-    onSettings: () -> Unit,
-    onAdd: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+private fun TopBar(locationName: String, isGps: Boolean, onSettings: () -> Unit, onAdd: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -219,16 +260,12 @@ private fun TopBar(
         IconButton(onClick = onAdd) {
             Icon(Icons.Filled.Add, contentDescription = "Add location", tint = OnWeatherSurface)
         }
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             if (isGps) {
-                Icon(Icons.Filled.MyLocation, contentDescription = null, tint = OnWeatherSurface, modifier = Modifier.size(14.dp))
+                Icon(Icons.Filled.MyLocation, null, tint = OnWeatherSurface, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(4.dp))
             }
-            Text(text = locationName, style = MaterialTheme.typography.titleMedium, color = OnWeatherSurface)
+            Text(locationName, style = MaterialTheme.typography.titleMedium, color = OnWeatherSurface)
         }
         IconButton(onClick = onSettings) {
             Icon(Icons.Filled.Settings, contentDescription = "Settings", tint = OnWeatherSurface)
@@ -241,9 +278,7 @@ private fun PageIndicator(pageCount: Int, currentPage: Int, modifier: Modifier =
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         repeat(pageCount) { i ->
             Box(
-                modifier = Modifier
-                    .size(if (i == currentPage) 8.dp else 6.dp)
-                    .clip(CircleShape)
+                modifier = Modifier.size(if (i == currentPage) 8.dp else 6.dp).clip(CircleShape)
                     .background(if (i == currentPage) OnWeatherSurface else OnWeatherSurface.copy(alpha = 0.4f))
             )
         }
@@ -259,7 +294,7 @@ private fun LoadingPage() {
 
 @Composable
 private fun ErrorPage(message: String, onRetry: () -> Unit) {
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(Modifier.fillMaxSize().padding(top = 120.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text(message, color = OnWeatherSurface, textAlign = TextAlign.Center, modifier = Modifier.padding(16.dp))
         Button(onClick = onRetry) { Text("Retry") }
     }
@@ -275,34 +310,18 @@ private fun EmptyState(onAddLocation: () -> Unit) {
 }
 
 @Composable
-private fun AddLocationDialog(
-    onDismiss: () -> Unit,
-    onSearch: (String) -> List<WeatherLocation>,
-    onSelect: (WeatherLocation) -> Unit
-) {
+private fun AddLocationDialog(onDismiss: () -> Unit, onSearch: (String) -> List<WeatherLocation>, onSelect: (WeatherLocation) -> Unit) {
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf(emptyList<WeatherLocation>()) }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Location") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("City name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Button(
-                    onClick = { results = onSearch(query) },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Search") }
+                OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text("City name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Button(onClick = { results = onSearch(query) }, modifier = Modifier.fillMaxWidth()) { Text("Search") }
                 results.forEach { loc ->
-                    TextButton(onClick = { onSelect(loc) }, modifier = Modifier.fillMaxWidth()) {
-                        Text(loc.name)
-                    }
+                    TextButton(onClick = { onSelect(loc) }, modifier = Modifier.fillMaxWidth()) { Text(loc.name) }
                 }
             }
         },
