@@ -1,5 +1,7 @@
 .gradle
 .idea
+.claude
+docs/plans
 *.iml
 local.properties
 build/
