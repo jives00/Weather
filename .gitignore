@@ -1,13 +1,32 @@
+# Gradle
 .gradle
-.idea
-.claude
-docs/plans
-*.iml
-local.properties
+gradle/wrapper/gradle-wrapper.jar
 build/
+
+# Android Studio / IntelliJ
+.idea
+*.iml
 captures/
 .externalNativeBuild
 .cxx
+
+# Local config (contains SDK path — machine-specific)
+local.properties
+
+# Build outputs
 *.apk
 *.aab
+*.dex
+
+# Keystore / signing (never commit these)
+*.jks
+*.keystore
+*.p12
+keystore.properties
+
+# Google services (contains API keys)
 google-services.json
+
+# Claude / docs
+.claude
+docs/
