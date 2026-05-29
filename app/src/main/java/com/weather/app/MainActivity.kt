@@ -1,0 +1,52 @@
+package com.weather.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.weather.app.ui.main.MainScreen
+import com.weather.app.ui.main.MainViewModel
+import com.weather.app.ui.settings.SettingsScreen
+import com.weather.app.ui.settings.SettingsViewModel
+import com.weather.app.ui.theme.WeatherTheme
+import androidx.compose.runtime.getValue
+
+class MainActivity : ComponentActivity() {
+    private val mainViewModel: MainViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            WeatherTheme {
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "weather") {
+                    composable("weather") {
+                        MainScreen(
+                            viewModel = mainViewModel,
+                            onNavigateToSettings = { navController.navigate("settings") }
+                        )
+                    }
+                    composable("settings") {
+                        SettingsScreen(
+                            viewModel = settingsViewModel,
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mainViewModel.refreshAll()
+    }
+}

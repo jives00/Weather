@@ -1,0 +1,2 @@
+-keep class com.weather.app.data.api.** { *; }
+-keep class com.weather.app.domain.model.** { *; }

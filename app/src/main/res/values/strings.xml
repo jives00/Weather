@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Weather</string>
+    <string name="widget_small_description">Small weather widget</string>
+    <string name="widget_bar_description">Bar weather widget</string>
+    <string name="widget_medium_description">Medium weather widget</string>
+    <string name="widget_large_description">Large weather widget</string>
+</resources>
