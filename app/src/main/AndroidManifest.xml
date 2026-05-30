@@ -73,6 +73,15 @@
                 android:resource="@xml/widget_large_info" />
         </receiver>
 
+        <!-- Reschedules the hourly AlarmManager refresh after device reboot -->
+        <receiver
+            android:name=".work.WidgetRefreshReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

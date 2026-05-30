@@ -8,7 +8,6 @@ import com.weather.app.data.datastore.LocationDataStore
 import com.weather.app.data.datastore.SettingsDataStore
 import com.weather.app.data.datastore.WidgetDataStore
 import com.weather.app.data.repository.WeatherRepository
-import com.weather.app.domain.model.WeatherLocation
 import com.weather.app.widget.BarWeatherWidget
 import com.weather.app.widget.LargeWeatherWidget
 import com.weather.app.widget.MediumWeatherWidget
@@ -32,18 +31,6 @@ class WeatherRefreshWorker(
         return try {
             val units = settingsDataStore.units.firstOrNull() ?: return Result.success()
             val savedLocations = locationDataStore.locations.firstOrNull() ?: emptyList()
-
-            // Also refresh GPS location if we have a cached one
-            val primaryData = WidgetDataStore.getPrimary(context)
-            val allLocations: List<WeatherLocation> = buildList {
-                if (primaryData != null) {
-                    val cached = WidgetDataStore.get(context, "gps")
-                    if (cached != null) {
-                        add(WeatherLocation(id = "gps", name = cached.locationName, latitude = 0.0, longitude = 0.0, isCurrentLocation = true))
-                    }
-                }
-                addAll(savedLocations)
-            }
 
             savedLocations.forEach { location ->
                 repository.getForecast(location, units).onSuccess { forecast ->

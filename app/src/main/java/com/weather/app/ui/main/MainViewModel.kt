@@ -12,6 +12,11 @@ import com.weather.app.data.repository.WeatherRepository
 import com.weather.app.domain.model.Units
 import com.weather.app.domain.model.WeatherForecast
 import com.weather.app.domain.model.WeatherLocation
+import androidx.glance.appwidget.updateAll
+import com.weather.app.widget.BarWeatherWidget
+import com.weather.app.widget.LargeWeatherWidget
+import com.weather.app.widget.MediumWeatherWidget
+import com.weather.app.widget.SmallWeatherWidget
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -85,6 +90,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     },
                     onFailure = { WeatherUiState.Error(it.message ?: "Failed to load weather") }
                 ))
+            }
+            if (result.isSuccess) {
+                val app = getApplication<Application>()
+                SmallWeatherWidget().updateAll(app)
+                BarWeatherWidget().updateAll(app)
+                MediumWeatherWidget().updateAll(app)
+                LargeWeatherWidget().updateAll(app)
             }
         }
     }
