@@ -116,15 +116,15 @@ private fun DailyRow(
         Spacer(Modifier.width(16.dp))
 
         Text(
-            text = "${day.tempMin.toInt()}°",
-            style = MaterialTheme.typography.bodyLarge,
-            color = OnWeatherSurfaceDim,
-            modifier = Modifier.width(36.dp)
-        )
-        Text(
             text = "${day.tempMax.toInt()}°",
             style = MaterialTheme.typography.bodyLarge,
             color = OnWeatherSurface,
+            modifier = Modifier.width(36.dp)
+        )
+        Text(
+            text = "${day.tempMin.toInt()}°",
+            style = MaterialTheme.typography.bodyMedium,
+            color = OnWeatherSurfaceDim,
             modifier = Modifier.width(36.dp)
         )
     }
