@@ -15,8 +15,12 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import android.appwidget.AppWidgetManager
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.weather.app.MainActivity
 import com.weather.app.data.datastore.WidgetDataStore
+import com.weather.app.work.WeatherRefreshWorker
 
 class BarWeatherWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -93,4 +97,9 @@ class BarWeatherWidget : GlanceAppWidget() {
 
 class BarWeatherWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget = BarWeatherWidget()
+
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<WeatherRefreshWorker>().build())
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+    }
 }

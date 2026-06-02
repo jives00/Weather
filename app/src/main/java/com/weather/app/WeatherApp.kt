@@ -20,7 +20,7 @@ class WeatherApp : Application() {
             .build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             WeatherRefreshWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             request
         )
     }
