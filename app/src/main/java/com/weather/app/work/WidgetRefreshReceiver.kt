@@ -21,7 +21,7 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
 
         fun schedule(context: Context) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val triggerAt = System.currentTimeMillis() + AlarmManager.INTERVAL_HOUR
+            val triggerAt = System.currentTimeMillis() + AlarmManager.INTERVAL_HALF_HOUR
             val pi = pendingIntent(context)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)

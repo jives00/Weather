@@ -16,11 +16,11 @@ class WeatherApp : Application() {
     }
 
     private fun scheduleWeatherRefresh() {
-        val request = PeriodicWorkRequestBuilder<WeatherRefreshWorker>(60, TimeUnit.MINUTES)
+        val request = PeriodicWorkRequestBuilder<WeatherRefreshWorker>(30, TimeUnit.MINUTES)
             .build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             WeatherRefreshWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingPeriodicWorkPolicy.KEEP,
             request
         )
     }
