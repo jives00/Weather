@@ -36,10 +36,15 @@ class WeatherRefreshWorker(
                 Log.w(TAG, "No units found, skipping refresh")
                 return Result.success()
             }
+            val gpsLocation = locationDataStore.currentLocation.firstOrNull()
             val savedLocations = locationDataStore.locations.firstOrNull() ?: emptyList()
-            Log.d(TAG, "Refreshing ${savedLocations.size} location(s)")
+            val allLocations = buildList {
+                gpsLocation?.let { add(it) }
+                addAll(savedLocations)
+            }
+            Log.d(TAG, "Refreshing ${allLocations.size} location(s) (gps=${gpsLocation != null}, saved=${savedLocations.size})")
 
-            savedLocations.forEach { location ->
+            allLocations.forEach { location ->
                 repository.getForecast(location, units)
                     .onSuccess { forecast ->
                         Log.d(TAG, "Fetch success for ${location.name}: ${forecast.current.temperature}°")

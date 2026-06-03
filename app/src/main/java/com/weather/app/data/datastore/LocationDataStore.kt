@@ -17,11 +17,23 @@ private val Context.locationDataStore: DataStore<Preferences> by preferencesData
 class LocationDataStore(private val context: Context) {
     private val gson = Gson()
     private val LOCATIONS_KEY = stringPreferencesKey("saved_locations")
+    private val CURRENT_LOCATION_KEY = stringPreferencesKey("current_location")
+
+    val currentLocation: Flow<WeatherLocation?> = context.locationDataStore.data.map { prefs ->
+        val json = prefs[CURRENT_LOCATION_KEY] ?: return@map null
+        runCatching { gson.fromJson(json, WeatherLocation::class.java) }.getOrNull()
+    }
 
     val locations: Flow<List<WeatherLocation>> = context.locationDataStore.data.map { prefs ->
         val json = prefs[LOCATIONS_KEY] ?: return@map emptyList()
         val type = object : TypeToken<List<WeatherLocation>>() {}.type
         gson.fromJson<List<WeatherLocation>>(json, type) ?: emptyList()
+    }
+
+    suspend fun saveCurrentLocation(location: WeatherLocation) {
+        context.locationDataStore.edit { prefs ->
+            prefs[CURRENT_LOCATION_KEY] = gson.toJson(location)
+        }
     }
 
     suspend fun saveLocation(location: WeatherLocation) {

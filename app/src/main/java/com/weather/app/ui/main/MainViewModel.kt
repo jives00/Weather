@@ -67,6 +67,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val name = resolveLocationName(loc.latitude, loc.longitude)
                 val gps = WeatherLocation(id = "gps", name = name, latitude = loc.latitude, longitude = loc.longitude, isCurrentLocation = true)
                 _gpsLocation.value = gps
+                locationDataStore.saveCurrentLocation(gps)
                 fetchForecast(gps)
             } catch (_: Exception) {}
         }
