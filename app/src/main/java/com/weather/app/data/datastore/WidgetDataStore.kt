@@ -17,7 +17,8 @@ data class WidgetData(
     val hourlyTemps: List<Int>,
     val hourlyConditions: List<String>,
     val temperatureSymbol: String,
-    val isDay: Boolean
+    val isDay: Boolean,
+    val lastRefreshedAt: Long = 0L
 ) {
     val condition: WeatherCondition get() = runCatching { WeatherCondition.valueOf(conditionName) }.getOrDefault(WeatherCondition.UNKNOWN)
 }
@@ -42,7 +43,8 @@ object WidgetDataStore {
             hourlyTemps = upcoming.map { it.temperature.toInt() },
             hourlyConditions = upcoming.map { it.condition.name },
             temperatureSymbol = forecast.units.temperatureSymbol,
-            isDay = forecast.current.isDay
+            isDay = forecast.current.isDay,
+            lastRefreshedAt = System.currentTimeMillis()
         )
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit()

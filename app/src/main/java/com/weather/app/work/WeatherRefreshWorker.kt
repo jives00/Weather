@@ -1,6 +1,7 @@
 package com.weather.app.work
 
 import android.content.Context
+import android.util.Log
 import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -21,6 +22,7 @@ class WeatherRefreshWorker(
 
     companion object {
         const val WORK_NAME = "weather_refresh"
+        private const val TAG = "WeatherRefresh"
     }
 
     private val repository = WeatherRepository()
@@ -28,24 +30,36 @@ class WeatherRefreshWorker(
     private val settingsDataStore = SettingsDataStore(context)
 
     override suspend fun doWork(): Result {
+        Log.d(TAG, "doWork() started")
         return try {
-            val units = settingsDataStore.units.firstOrNull() ?: return Result.success()
+            val units = settingsDataStore.units.firstOrNull() ?: run {
+                Log.w(TAG, "No units found, skipping refresh")
+                return Result.success()
+            }
             val savedLocations = locationDataStore.locations.firstOrNull() ?: emptyList()
+            Log.d(TAG, "Refreshing ${savedLocations.size} location(s)")
 
             savedLocations.forEach { location ->
-                repository.getForecast(location, units).onSuccess { forecast ->
-                    WidgetDataStore.save(context, forecast)
-                }
+                repository.getForecast(location, units)
+                    .onSuccess { forecast ->
+                        Log.d(TAG, "Fetch success for ${location.name}: ${forecast.current.temperature}°")
+                        WidgetDataStore.save(context, forecast)
+                    }
+                    .onFailure { e ->
+                        Log.e(TAG, "Fetch failed for ${location.name}: ${e.message}")
+                    }
             }
 
-            // Update all widget instances
+            Log.d(TAG, "Calling updateAll() on all widgets")
             SmallWeatherWidget().updateAll(context)
             BarWeatherWidget().updateAll(context)
             MediumWeatherWidget().updateAll(context)
             LargeWeatherWidget().updateAll(context)
 
+            Log.d(TAG, "doWork() complete")
             Result.success()
         } catch (e: Exception) {
+            Log.e(TAG, "doWork() threw exception: ${e.message}", e)
             Result.retry()
         }
     }

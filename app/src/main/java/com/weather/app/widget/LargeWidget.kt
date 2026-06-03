@@ -16,6 +16,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import android.appwidget.AppWidgetManager
+import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.weather.app.MainActivity
@@ -106,6 +107,7 @@ class LargeWeatherWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget = LargeWeatherWidget()
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        Log.d("WeatherWidget", "LargeWeatherWidgetReceiver.onUpdate() triggered for ${appWidgetIds.size} widget(s)")
         WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<WeatherRefreshWorker>().build())
         super.onUpdate(context, appWidgetManager, appWidgetIds)
     }

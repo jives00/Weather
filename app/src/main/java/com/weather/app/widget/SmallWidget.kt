@@ -2,6 +2,9 @@ package com.weather.app.widget
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.*
@@ -16,6 +19,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import android.appwidget.AppWidgetManager
+import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.weather.app.MainActivity
@@ -37,6 +41,9 @@ class SmallWeatherWidget : GlanceAppWidget() {
                     if (data == null) {
                         Text("—", style = TextStyle(color = ColorProvider(Color.White), fontSize = 22.sp))
                     } else {
+                        val updatedTime = if (data.lastRefreshedAt > 0L)
+                            SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(data.lastRefreshedAt))
+                        else "—"
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalAlignment = Alignment.CenterVertically
@@ -53,6 +60,13 @@ class SmallWeatherWidget : GlanceAppWidget() {
                                     fontWeight = FontWeight.Bold
                                 )
                             )
+                            Text(
+                                text = updatedTime,
+                                style = TextStyle(
+                                    color = ColorProvider(Color.White.copy(alpha = 0.6f)),
+                                    fontSize = 9.sp
+                                )
+                            )
                         }
                     }
             }
@@ -64,6 +78,7 @@ class SmallWeatherWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget = SmallWeatherWidget()
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        Log.d("WeatherWidget", "SmallWeatherWidgetReceiver.onUpdate() triggered for ${appWidgetIds.size} widget(s)")
         WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<WeatherRefreshWorker>().build())
         super.onUpdate(context, appWidgetManager, appWidgetIds)
     }
