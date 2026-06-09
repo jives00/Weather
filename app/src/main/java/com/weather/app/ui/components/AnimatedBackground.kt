@@ -139,7 +139,7 @@ fun AnimatedBackground(
     LaunchedEffect(pType, size) {
         if (pType == ParticleType.NONE || size.width <= 0) return@LaunchedEffect
         while (true) {
-            delay(16L)
+            delay(33L)
             particles = stepParticles(particles, pType, size.width.toFloat(), size.height.toFloat(), rng)
         }
     }
@@ -200,7 +200,7 @@ fun AnimatedBackgroundWithSize(
     LaunchedEffect(pType, canvasW, canvasH) {
         if (pType == ParticleType.NONE || canvasW <= 0f) return@LaunchedEffect
         while (true) {
-            delay(16L)
+            delay(33L)
             particles = stepParticles(particles, pType, canvasW, canvasH, rng)
         }
     }

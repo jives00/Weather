@@ -62,6 +62,7 @@ class WeatherMapperTest {
             time = listOf("2024-01-01T12:00", "2024-01-01T13:00"),
             temperature = listOf(72.0, 73.0),
             precipitationProbability = listOf(10, 15),
+            precipitation = listOf(0.0, 0.0),
             weatherCode = listOf(1, 1),
             isDay = listOf(1, 1)
         ),
