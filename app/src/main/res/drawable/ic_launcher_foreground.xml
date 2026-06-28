@@ -5,43 +5,48 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!--
-        8-pointed star.
-        Cardinal points (N/S/E/W) at radius 44 from center (54,54).
-        Diagonal points (NE/SE/SW/NW) at radius 31.
-        Inner valleys at radius 19.
+    <group
+        android:scaleX="0.8"
+        android:scaleY="0.8"
+        android:pivotX="54"
+        android:pivotY="54">
 
-        Cardinal points land at 10, 98 — well inside the 108dp viewport.
-        All coordinates computed as: x = 54 + r*sin(θ), y = 54 - r*cos(θ)
-    -->
-    <path
-        android:fillColor="#F9A825"
-        android:pathData="
-            M 54,10
-            L 61,37  L 76,31  L 72,46
-            L 98,54
-            L 72,62  L 76,77  L 61,71
-            L 54,98
-            L 47,71  L 32,77  L 36,62
-            L 10,54
-            L 36,46  L 32,31  L 47,37
-            Z"/>
+        <!--
+            8-pointed star.
+            Cardinal points (N/S/E/W) at radius 44 from center (54,54).
+            Diagonal points (NE/SE/SW/NW) at radius 31.
+            Inner valleys at radius 19.
+        -->
+        <path
+            android:fillColor="#F9A825"
+            android:pathData="
+                M 54,10
+                L 61,37  L 76,31  L 72,46
+                L 98,54
+                L 72,62  L 76,77  L 61,71
+                L 54,98
+                L 47,71  L 32,77  L 36,62
+                L 10,54
+                L 36,46  L 32,31  L 47,37
+                Z"/>
 
-    <!-- Golden circle overlaid on the star center, radius 28 -->
-    <path
-        android:fillColor="#FFCA28"
-        android:pathData="M54,26 A28,28 0 0,1 54,82 A28,28 0 0,1 54,26 Z"/>
+        <!-- Golden circle overlaid on the star center, radius 28 -->
+        <path
+            android:fillColor="#FFCA28"
+            android:pathData="M54,26 A28,28 0 0,1 54,82 A28,28 0 0,1 54,26 Z"/>
 
-    <!-- Cloud — lower center, overlapping the circle's bottom edge -->
-    <path
-        android:fillColor="#EEEEEE"
-        android:pathData="
-            M 34,76
-            C 32,72 32,66 38,64
-            C 40,58 49,57 54,62
-            C 57,55 67,54 72,60
-            C 76,55 84,57 84,64
-            C 88,66 86,76 82,76
-            Z"/>
+        <!-- Cloud — lower center, overlapping the circle's bottom edge -->
+        <path
+            android:fillColor="#EEEEEE"
+            android:pathData="
+                M 34,76
+                C 32,72 32,66 38,64
+                C 40,58 49,57 54,62
+                C 57,55 67,54 72,60
+                C 76,55 84,57 84,64
+                C 88,66 86,76 82,76
+                Z"/>
+
+    </group>
 
 </vector>
