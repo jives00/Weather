@@ -93,7 +93,7 @@ private fun DailyRow(
             modifier = Modifier.width(64.dp)
         )
 
-        if (day.precipitationProbability > 0) {
+        if ((day.precipitationProbability ?: 0) > 0) {
             Text(
                 text = "${day.precipitationProbability}%",
                 style = MaterialTheme.typography.labelMedium,

@@ -79,15 +79,25 @@ object WeatherMapper {
     private fun mapDaily(response: WeatherApiResponse): List<DailyWeather> {
         val d = response.daily
         return d.time.indices.map { i ->
+            val precipProb = d.precipitationProbabilityMax.getOrNull(i)
+            val rawCondition = WeatherCondition.fromWmoCode(d.weatherCode[i], true)
+            // Downgrade thunderstorm to rain showers when precipitation probability is absent
+            // or below 15% — Open-Meteo's weather_code and precipitation_probability_max are
+            // derived from different model outputs and don't always agree.
+            val condition = if (rawCondition == WeatherCondition.THUNDERSTORM && (precipProb == null || precipProb < 15)) {
+                WeatherCondition.RAIN_SHOWERS
+            } else {
+                rawCondition
+            }
             DailyWeather(
                 time = parseDailyTime(d.time[i]),
                 tempMax = d.temperatureMax[i],
                 tempMin = d.temperatureMin[i],
-                condition = WeatherCondition.fromWmoCode(d.weatherCode[i], true),
+                condition = condition,
                 wmoCode = d.weatherCode[i],
                 sunrise = parseIsoTime(d.sunrise[i]),
                 sunset = parseIsoTime(d.sunset[i]),
-                precipitationProbability = d.precipitationProbabilityMax.getOrNull(i) ?: 0,
+                precipitationProbability = precipProb,
                 precipitationSum = d.precipitationSum[i],
                 windSpeedMax = d.windSpeedMax[i],
                 uvIndexMax = d.uvIndexMax[i]

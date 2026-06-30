@@ -33,7 +33,7 @@ data class DailyWeather(
     val wmoCode: Int,
     val sunrise: Long,
     val sunset: Long,
-    val precipitationProbability: Int,
+    val precipitationProbability: Int?,
     val precipitationSum: Double,
     val windSpeedMax: Double,
     val uvIndexMax: Double

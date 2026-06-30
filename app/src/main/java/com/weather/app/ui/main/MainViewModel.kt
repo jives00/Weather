@@ -1,13 +1,19 @@
 package com.weather.app.ui.main
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
 import android.location.Geocoder
+import android.net.Uri
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
 import com.weather.app.data.datastore.LocationDataStore
 import com.weather.app.data.datastore.SettingsDataStore
 import com.weather.app.data.datastore.WidgetDataStore
+import com.weather.app.data.repository.DownloadProgress
+import com.weather.app.data.repository.UpdateRepository
 import com.weather.app.data.repository.WeatherRepository
 import com.weather.app.domain.model.Units
 import com.weather.app.domain.model.WeatherForecast
@@ -22,6 +28,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
 
+sealed class UpdateState {
+    data object None : UpdateState()
+    data class Available(val tag: String, val apkUrl: String) : UpdateState()
+    data class Downloading(val progress: Float) : UpdateState()
+    data class ReadyToInstall(val uri: Uri?) : UpdateState()
+    data object Dismissed : UpdateState()
+}
+
 sealed class WeatherUiState {
     data object Loading : WeatherUiState()
     data class Success(val forecast: WeatherForecast) : WeatherUiState()
@@ -32,7 +46,49 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val locationDataStore = LocationDataStore(application)
     private val settingsDataStore = SettingsDataStore(application)
     private val repository = WeatherRepository()
+    private val updateRepository = UpdateRepository()
     private val fusedLocation = LocationServices.getFusedLocationProviderClient(application)
+
+    private val _updateState = MutableStateFlow<UpdateState>(UpdateState.None)
+    val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val info = updateRepository.checkForUpdate()
+            if (info != null) _updateState.value = UpdateState.Available(info.tag, info.apkUrl)
+        }
+    }
+
+    fun startUpdate(context: Context) {
+        val state = _updateState.value as? UpdateState.Available ?: return
+        viewModelScope.launch {
+            updateRepository.downloadApk(context, state.apkUrl, state.tag).collect { progress ->
+                _updateState.value = when (progress) {
+                    is DownloadProgress.InProgress -> UpdateState.Downloading(progress.fraction)
+                    is DownloadProgress.Complete -> UpdateState.ReadyToInstall(progress.uri)
+                    is DownloadProgress.Failed -> UpdateState.Available(state.tag, state.apkUrl)
+                }
+            }
+        }
+    }
+
+    fun installUpdate(context: Context) {
+        val uri = (_updateState.value as? UpdateState.ReadyToInstall)?.uri ?: return
+        if (!context.packageManager.canRequestPackageInstalls()) {
+            context.startActivity(
+                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+            return
+        }
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW)
+                .setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        )
+    }
+
+    fun dismissUpdate() { _updateState.value = UpdateState.Dismissed }
 
     val units: StateFlow<Units> = settingsDataStore.units
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), Units.IMPERIAL)

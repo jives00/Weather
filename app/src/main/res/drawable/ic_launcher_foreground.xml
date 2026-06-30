@@ -11,26 +11,7 @@
         android:pivotX="54"
         android:pivotY="54">
 
-        <!--
-            8-pointed star.
-            Cardinal points (N/S/E/W) at radius 44 from center (54,54).
-            Diagonal points (NE/SE/SW/NW) at radius 31.
-            Inner valleys at radius 19.
-        -->
-        <path
-            android:fillColor="#F9A825"
-            android:pathData="
-                M 54,10
-                L 61,37  L 76,31  L 72,46
-                L 98,54
-                L 72,62  L 76,77  L 61,71
-                L 54,98
-                L 47,71  L 32,77  L 36,62
-                L 10,54
-                L 36,46  L 32,31  L 47,37
-                Z"/>
-
-        <!-- Golden circle overlaid on the star center, radius 28 -->
+        <!-- Sun circle, radius 28 -->
         <path
             android:fillColor="#FFCA28"
             android:pathData="M54,26 A28,28 0 0,1 54,82 A28,28 0 0,1 54,26 Z"/>

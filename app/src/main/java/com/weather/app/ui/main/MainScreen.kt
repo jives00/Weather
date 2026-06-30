@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,8 +38,10 @@ fun MainScreen(
     viewModel: MainViewModel,
     onNavigateToSettings: () -> Unit
 ) {
+    val context = LocalContext.current
     val locations by viewModel.locations.collectAsStateWithLifecycle()
     val forecasts by viewModel.forecasts.collectAsStateWithLifecycle()
+    val updateState by viewModel.updateState.collectAsStateWithLifecycle()
 
     val locationPermission = rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION) { granted ->
         if (granted) viewModel.onLocationPermissionGranted()
@@ -88,14 +91,22 @@ fun MainScreen(
                 .align(Alignment.TopCenter)
         )
 
-        // Top bar
-        TopBar(
-            locationName = currentLocation?.name ?: "",
-            isGps = currentLocation?.isCurrentLocation == true,
-            onSettings = onNavigateToSettings,
-            onAdd = { showAddDialog = true },
-            modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding()
-        )
+        // Top bar + update banner stacked
+        Column(modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding()) {
+            TopBar(
+                locationName = currentLocation?.name ?: "",
+                isGps = currentLocation?.isCurrentLocation == true,
+                onSettings = onNavigateToSettings,
+                onAdd = { showAddDialog = true }
+            )
+            UpdateBanner(
+                state = updateState,
+                context = context,
+                onUpdate = { viewModel.startUpdate(context) },
+                onInstall = { viewModel.installUpdate(context) },
+                onDismiss = { viewModel.dismissUpdate() }
+            )
+        }
 
         // Page dots
         if (locations.size > 1) {
@@ -252,9 +263,9 @@ private fun HeroContent(forecast: WeatherForecast, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun TopBar(locationName: String, isGps: Boolean, onSettings: () -> Unit, onAdd: () -> Unit, modifier: Modifier = Modifier) {
+private fun TopBar(locationName: String, isGps: Boolean, onSettings: () -> Unit, onAdd: () -> Unit) {
     Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onAdd) {
