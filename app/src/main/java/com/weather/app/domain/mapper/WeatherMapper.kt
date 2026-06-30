@@ -18,6 +18,21 @@ object WeatherMapper {
     private val dailyFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     private val isoFmt = DateTimeFormatter.ISO_DATE_TIME
 
+    private val precipConditions = setOf(
+        WeatherCondition.RAIN, WeatherCondition.RAIN_SHOWERS, WeatherCondition.DRIZZLE,
+        WeatherCondition.FREEZING_RAIN, WeatherCondition.SNOW, WeatherCondition.SNOW_SHOWERS,
+        WeatherCondition.THUNDERSTORM
+    )
+
+    // Open-Meteo's weather_code and precipitation_probability come from different model outputs
+    // and frequently disagree. Downgrade any precipitation icon to partly cloudy when the
+    // probability is too low to be meaningful.
+    private fun resolveCondition(raw: WeatherCondition, precipProb: Int?, isDay: Boolean): WeatherCondition {
+        if (raw !in precipConditions) return raw
+        if ((precipProb ?: 0) >= 15) return raw
+        return if (isDay) WeatherCondition.PARTLY_CLOUDY_DAY else WeatherCondition.PARTLY_CLOUDY_NIGHT
+    }
+
     fun mapToForecast(
         response: WeatherApiResponse,
         location: WeatherLocation,
@@ -26,7 +41,8 @@ object WeatherMapper {
     ): WeatherForecast {
         val daily = mapDaily(response)
         val todayUvIndex = daily.firstOrNull()?.uvIndexMax ?: 0.0
-        val current = mapCurrent(response, todayUvIndex)
+        val todayPrecipProb = response.daily.precipitationProbabilityMax.getOrNull(0)
+        val current = mapCurrent(response, todayUvIndex, todayPrecipProb)
         val hourly = mapHourly(response)
 
         return WeatherForecast(
@@ -41,15 +57,18 @@ object WeatherMapper {
         )
     }
 
-    private fun mapCurrent(response: WeatherApiResponse, uvIndex: Double): CurrentWeather {
+    private fun mapCurrent(response: WeatherApiResponse, uvIndex: Double, todayPrecipProb: Int?): CurrentWeather {
         val c = response.current
         val isDay = c.isDay == 1
+        val rawCondition = WeatherCondition.fromWmoCode(c.weatherCode, isDay)
+        val condition = resolveCondition(rawCondition, todayPrecipProb, isDay)
+        val description = if (condition != rawCondition) "Chance of ${rawCondition.name.lowercase().replace('_', ' ')}" else WeatherCondition.descriptionFromWmoCode(c.weatherCode)
         return CurrentWeather(
             temperature = c.temperature,
             feelsLike = c.apparentTemperature,
             humidity = c.relativeHumidity,
-            condition = WeatherCondition.fromWmoCode(c.weatherCode, isDay),
-            conditionDescription = WeatherCondition.descriptionFromWmoCode(c.weatherCode),
+            condition = condition,
+            conditionDescription = description,
             windSpeed = c.windSpeed,
             windDirection = c.windDirection,
             uvIndex = uvIndex,
@@ -64,12 +83,15 @@ object WeatherMapper {
         val h = response.hourly
         return h.time.indices.map { i ->
             val isDay = h.isDay.getOrNull(i) == 1
+            val precipProb = h.precipitationProbability.getOrNull(i) ?: 0
+            val rawCondition = WeatherCondition.fromWmoCode(h.weatherCode[i], isDay)
+            val condition = resolveCondition(rawCondition, precipProb, isDay)
             HourlyWeather(
                 time = parseHourlyTime(h.time[i]),
                 temperature = h.temperature[i],
-                precipitationProbability = h.precipitationProbability.getOrNull(i) ?: 0,
+                precipitationProbability = precipProb,
                 precipitation = h.precipitation.getOrNull(i) ?: 0.0,
-                condition = WeatherCondition.fromWmoCode(h.weatherCode[i], isDay),
+                condition = condition,
                 wmoCode = h.weatherCode[i],
                 isDay = isDay
             )
@@ -81,14 +103,7 @@ object WeatherMapper {
         return d.time.indices.map { i ->
             val precipProb = d.precipitationProbabilityMax.getOrNull(i)
             val rawCondition = WeatherCondition.fromWmoCode(d.weatherCode[i], true)
-            // Downgrade thunderstorm to rain showers when precipitation probability is absent
-            // or below 15% — Open-Meteo's weather_code and precipitation_probability_max are
-            // derived from different model outputs and don't always agree.
-            val condition = if (rawCondition == WeatherCondition.THUNDERSTORM && (precipProb == null || precipProb < 15)) {
-                WeatherCondition.RAIN_SHOWERS
-            } else {
-                rawCondition
-            }
+            val condition = resolveCondition(rawCondition, precipProb, isDay = true)
             DailyWeather(
                 time = parseDailyTime(d.time[i]),
                 tempMax = d.temperatureMax[i],
